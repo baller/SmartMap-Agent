@@ -44,7 +44,7 @@ class AsyncChatOpenAI:
 
     llm: AsyncOpenAI = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.llm = AsyncOpenAI(
             api_key=os.environ.get("OPENAI_API_KEY"),
             base_url=os.environ.get("OPENAI_BASE_URL"),
@@ -54,7 +54,9 @@ class AsyncChatOpenAI:
         if self.context:
             self.messages.append({"role": "user", "content": self.context})
 
-    async def chat(self, prompt: str = "", print_llm_output: bool = True):
+    async def chat(
+        self, prompt: str = "", print_llm_output: bool = True
+    ) -> ChatOpenAIChatResponse:
         pretty.log_title("CHAT")
         if prompt:
             self.messages.append({"role": "user", "content": prompt})
@@ -63,7 +65,7 @@ class AsyncChatOpenAI:
             model=self.model,
             messages=self.messages,
             tools=self.getToolsDefinition(),
-            stream=True
+            stream=True,
         )
         pretty.log_title("RESPONSE")
         content = ""
@@ -79,18 +81,19 @@ class AsyncChatOpenAI:
                     printed_llm_output = True
             # 处理 tool_calls
             if delta.tool_calls:
-                for tool_call_chunk in delta.tool_calls:
-                    # 第一次收到一个tool_call, 因为流式传输所以我们先设置一个占位值
-                    if len(tool_call_chunk) <= tool_call_chunk.index:
+                for tool_call in delta.tool_calls:
+                    if len(tool_calls) <= tool_call.index:
                         tool_calls.append(ToolCall())
-                    current_call = tool_calls[tool_call_chunk.index]
-                    if tool_call_chunk.id:
-                        current_call.id = tool_call_chunk.id or ""
-                    if tool_call_chunk.function:
-                        current_call.function.name = tool_call_chunk.function.name or ""
-                        current_call.function.arguments = (
-                            tool_call_chunk.function.arguments or ""
-                        )
+                    this_tool_call = tool_calls[tool_call.index]
+                    if tool_call.id:
+                        this_tool_call.id += tool_call.id or ""
+                    if tool_call.function:
+                        if tool_call.function.name:
+                            this_tool_call.function.name += tool_call.function.name or ""
+                        if tool_call.function.arguments:
+                            this_tool_call.function.arguments += (
+                                tool_call.function.arguments or ""
+                            )
         if printed_llm_output:
             print()
         self.messages.append(
@@ -128,8 +131,17 @@ class AsyncChatOpenAI:
             for t in self.tools
         ]
 
+    def append_tool_result(self, tool_call_id: str, tool_output: str) -> None:
+        self.messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_call_id,
+                "content": tool_output,
+            }
+        )
 
-async def example():
+
+async def example() -> None:
     llm = AsyncChatOpenAI(
         model="gpt-4o-mini",
     )

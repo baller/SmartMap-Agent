@@ -4,7 +4,7 @@ modified from https://modelcontextprotocol.io/quickstart/client  in tab 'python'
 
 import asyncio
 import shlex
-from typing import Optional
+from typing import Any, Optional
 from contextlib import AsyncExitStack
 
 from mcp import ClientSession, StdioServerParameters, Tool
@@ -70,6 +70,9 @@ class MCPClient:
         response = await self.session.list_tools()
         self.tools = response.tools
         rprint("\nConnected to server with tools:", [tool.name for tool in self.tools])
+
+    async def call_tool(self, name: str, params: dict[str, Any]):
+        return await self.session.call_tool(name, params)
 
 
 async def example():
