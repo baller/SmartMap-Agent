@@ -17,3 +17,7 @@ run_example_pretty:
 
 run_example_chat_openai:
 	uv run src/augmented/chat_openai.py
+
+
+run_example_mcp_client:
+	uv run src/augmented/mcp_client.py
