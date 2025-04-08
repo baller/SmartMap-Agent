@@ -28,6 +28,6 @@ run_example_2_mcp_client:
 run_example_3_agent:
 	uv run src/augmented/agent.py
 
-# step 4: rag
+# step 4: impl RAG
 run_example_4_rag:
 	uv run rag_example.py

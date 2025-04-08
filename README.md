@@ -98,9 +98,9 @@ classDiagram
 2. 克隆本仓库
 3. 复制 `.env.example` 为 `.env` 并填写必要的配置信息：
    - `OPENAI_API_KEY`: OpenAI API 密钥
-   - `OPENAI_BASE_URL`: OpenAI API 基础 URL（可选，默认为官方 API）
+   - `OPENAI_BASE_URL`: OpenAI API 基础 URL
    - `EMBEDDING_KEY`: 嵌入模型 API 密钥（可选，默认使用 OPENAI_API_KEY）
-   - `EMBEDDING_BASE_URL`: 嵌入模型 API 基础 URL, 如硅基流动的API或兼容OpenAI格式的API
+   - `EMBEDDING_BASE_URL`: 嵌入模型 API 基础 URL, 如硅基流动的API或兼容OpenAI格式的API （可选，默认使用 OPENAI_BASE_URL）
    - `USE_CN_MIRROR`: 是否使用中国镜像（可选）仅不设置为 false
    - `PROXY_URL`: 代理 URL（可选）, 仅不设置为 false
 
@@ -108,7 +108,7 @@ classDiagram
 
 ```bash
 # 使用 uv 安装依赖
-uv pip install -e .
+uv sync
 ```
 
 ### 运行示例
