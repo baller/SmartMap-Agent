@@ -12,24 +12,6 @@ from augmented.utils import pretty
 from augmented.utils.info import PROJECT_ROOT_DIR
 
 
-class McpCmdOptions:
-    uvx_use_cn_mirror = (
-        ("--extra-index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple")
-        if os.environ.get("USE_CN_MIRROR")
-        else ""
-    )
-    npx_use_cn_mirror = (
-        ("--registry https://registry.npmmirror.com")
-        if os.environ.get("USE_CN_MIRROR")
-        else ""
-    )
-    fetch_server_mcp_use_proxy = (
-        f"--proxy-url {os.environ.get('PROXY_URL')}"
-        if os.environ.get("PROXY_URL")
-        else ""
-    )
-
-
 @dataclass
 class Agent:
     mcp_clients: list[MCPClient]
@@ -38,7 +20,7 @@ class Agent:
     system_prompt: str = ""
     context: str = ""
 
-    async def init(self):
+    async def init(self) -> None:
         pretty.log_title("[Agent] INIT LLM&TOOLS")
         tools = []
         for mcp_client in self.mcp_clients:
@@ -99,7 +81,25 @@ class Agent:
                 return chat_resp.content
 
 
-async def example():
+class McpCmdOptions:
+    uvx_use_cn_mirror = (
+        ("--extra-index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple")
+        if os.environ.get("USE_CN_MIRROR")
+        else ""
+    )
+    npx_use_cn_mirror = (
+        ("--registry https://registry.npmmirror.com")
+        if os.environ.get("USE_CN_MIRROR")
+        else ""
+    )
+    fetch_server_mcp_use_proxy = (
+        f"--proxy-url {os.environ.get('PROXY_URL')}"
+        if os.environ.get("PROXY_URL")
+        else ""
+    )
+
+
+async def example() -> None:
     enabled_mcp_clients = []
     for mcp_name, cmd in [
         (

@@ -27,7 +27,7 @@ class MCPClient:
         command: str,
         args: list[str],
         version: str = "0.0.1",
-    ):
+    ) -> None:
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
         self.name = name
@@ -36,18 +36,18 @@ class MCPClient:
         self.args = args
         self.tools: list[Tool] = []
 
-    async def init(self):
+    async def init(self) -> None:
         await self._connect_to_server()
 
-    async def close(self):
+    async def close(self) -> None:
         await self.exit_stack.aclose()
 
-    def get_tools(self):
+    def get_tools(self) -> list[Tool]:
         return self.tools
 
     async def _connect_to_server(
         self,
-    ):
+    ) -> None:
         """
         Connect to an MCP server
         """
@@ -75,7 +75,7 @@ class MCPClient:
         return await self.session.call_tool(name, params)
 
 
-async def example():
+async def example() -> None:
     for mcp_name, cmd in [
         (
             "filesystem",
