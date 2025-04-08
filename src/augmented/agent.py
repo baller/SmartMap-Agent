@@ -39,10 +39,7 @@ class Agent:
             await mcp_client.close()
 
     async def invoke(self, prompt: str) -> str | None:
-        try:
-            return await self._invoke(prompt)
-        finally:
-            await self.close()
+        return await self._invoke(prompt)
 
     async def _invoke(self, prompt: str) -> str | None:
         if self.llm is None:
@@ -129,6 +126,8 @@ async def example() -> None:
         f"爬取 https://news.ycombinator.com 的内容, 并且总结后保存在 {PROJECT_ROOT_DIR / 'output' / 'step3-agent-with-mcp'!s} 目录下的news.md文件中"
     )
     rprint(resp)
+    # FIXME: @l8ng 需要找到合适位置清理/关闭资源 (现在报错  Attempted to exit a cancel scope that isn't the current tasks's current cancel scope)
+    # await agent.close()
 
 
 if __name__ == "__main__":

@@ -8,9 +8,6 @@ default: help
 help:
     @echo "`just -l`"
 
-run_main:
-	uv run main.py
-
 
 # step 0: init with utils
 run_example_0_pretty:
@@ -30,3 +27,7 @@ run_example_2_mcp_client:
 # step 3: impl Agent
 run_example_3_agent:
 	uv run src/augmented/agent.py
+
+# step 4: rag
+run_example_4_rag:
+	uv run rag_example.py
