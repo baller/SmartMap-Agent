@@ -1,16 +1,4 @@
-from rich.panel import Panel
-from augmented import hello
+from augmented.utils import pretty
 
 
-def main():
-    print(hello())
-    print("Hello from exp-llm-mcp-rag!")
-
-
-if __name__ == "__main__":
-    main()
-
-
-print(
-    Panel("", title="Hello"),
-)
+pretty.log_title("Hello World!", "Title")

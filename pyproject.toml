@@ -19,3 +19,10 @@ dev = [
 ]
 
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/augmented"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
