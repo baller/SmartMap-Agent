@@ -34,10 +34,19 @@ class Agent:
             context=self.context,
         )
 
-    async def close(self) -> None:
-        pretty.log_title("[Agent] CLOSE LLM&TOOLS")
-        for mcp_client in self.mcp_clients:
-            await mcp_client.close()
+    async def cleanup(self) -> None:
+        pretty.log_title("[Agent] CLEANUP LLM&TOOLS")
+        while self.mcp_clients:
+            # NOTE: 需要先处理其他依赖于mcp_client的资源, 不然会有一堆错误, 如
+            # RuntimeError: Attempted to exit cancel scope in a different task than it was entered in
+            # RuntimeError: Attempted to exit a cancel scope that isn't the current tasks's current cancel scope an error occurred during closing of asynchronous generator <async_generator object stdio_client at 0x76c3e08ee0c0>
+            mcp_client = self.mcp_clients.pop()
+            try:
+                await mcp_client.cleanup()
+            except Exception as e:
+                rprint(
+                    f"cleanup mcp_client {mcp_client.name} failed but continue! context: {e!s}"
+                )
 
     async def invoke(self, prompt: str) -> str | None:
         return await self._invoke(prompt)
@@ -98,8 +107,7 @@ async def example() -> None:
         f"爬取 https://news.ycombinator.com 的内容, 并且总结后保存在 {PROJECT_ROOT_DIR / 'output' / 'step3-agent-with-mcp'!s} 目录下的news.md文件中"
     )
     rprint(resp)
-    # FIXME: @l8ng 需要找到合适位置清理/关闭资源 (现在报错  Attempted to exit a cancel scope that isn't the current tasks's current cancel scope)
-    # await agent.close()
+    await agent.cleanup()
 
 
 if __name__ == "__main__":

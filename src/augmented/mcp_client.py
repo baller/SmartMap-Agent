@@ -16,7 +16,6 @@ from dotenv import load_dotenv
 
 from augmented.mcp_tools import PresetMcpTools
 from augmented.utils.info import PROJECT_ROOT_DIR
-from augmented.utils.pretty import log_title
 
 load_dotenv()
 
@@ -40,7 +39,7 @@ class MCPClient:
     async def init(self) -> None:
         await self._connect_to_server()
 
-    async def close(self) -> None:
+    async def cleanup(self) -> None:
         await self.exit_stack.aclose()
 
     def get_tools(self) -> list[Tool]:
@@ -86,7 +85,7 @@ async def example() -> None:
         await mcp_client.init()
         tools = mcp_client.get_tools()
         rprint(tools)
-        await mcp_client.close()
+        await mcp_client.cleanup()
 
 
 if __name__ == "__main__":
