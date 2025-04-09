@@ -153,6 +153,7 @@ sequenceDiagram
   - `mcp_client.py`: MCP 客户端实现
   - `embedding_retriever.py`: 嵌入检索器实现
   - `vector_store.py`: 向量存储实现
+  - `mcp_tools.py`: MCP 工具定义
   - `utils/`: 工具函数
 - `rag_example.py`: RAG 示例程序
 - `justfile`: 任务运行配置文件
