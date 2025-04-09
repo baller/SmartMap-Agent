@@ -44,7 +44,7 @@ classDiagram
         +system_prompt: str
         +context: str
         +init()
-        +close()
+        +cleanup()
         +invoke(prompt: str)
     }
 
@@ -54,7 +54,7 @@ classDiagram
         +args: list[str]
         +version: str
         +init()
-        +close()
+        +cleanup()
         +get_tools()
         +call_tool(name: str, params: dict)
     }
@@ -65,7 +65,7 @@ classDiagram
         +tools: list[Tool]
         +system_prompt: str
         +context: str
-        +chat(prompt: str)
+        +chat(prompt: str, print_llm_output: bool)
         +getToolsDefinition()
         +append_tool_result(tool_call_id: str, tool_output: str)
     }
@@ -84,10 +84,17 @@ classDiagram
         +search(query_embedding: list[float], top_k: int)
     }
 
+    class ALogger {
+        +prefix: str
+        +title(text: str, rule_style: str)
+    }
+
     Agent --> MCPClient
     Agent --> AsyncChatOpenAI
     Agent ..> EembeddingRetriever
     EembeddingRetriever --> VectorStore
+    Agent ..> ALogger
+    AsyncChatOpenAI ..> ALogger
 ```
 
 ## 快速开始
@@ -99,6 +106,7 @@ classDiagram
 3. 复制 `.env.example` 为 `.env` 并填写必要的配置信息：
    - `OPENAI_API_KEY`: OpenAI API 密钥
    - `OPENAI_BASE_URL`: OpenAI API 基础 URL
+   - `DEFAULT_MODEL_NAME`: 默认使用的模型名称（可选，默认为 "gpt-4o-mini"）
    - `EMBEDDING_KEY`: 嵌入模型 API 密钥（可选，默认使用 OPENAI_API_KEY）
    - `EMBEDDING_BASE_URL`: 嵌入模型 API 基础 URL, 如硅基流动的API或兼容OpenAI格式的API （可选，默认使用 OPENAI_BASE_URL）
    - `USE_CN_MIRROR`: 是否使用中国镜像（可选）仅不设置为 false
@@ -130,14 +138,17 @@ sequenceDiagram
     participant ER as EmbeddingRetriever
     participant VS as VectorStore
     participant MCP as MCP客户端
+    participant Logger as ALogger
 
     User->>Agent: 提供查询
+    Agent->>Logger: 记录操作日志
     Agent->>ER: 检索相关文档
     ER->>VS: 查询向量存储
     VS-->>ER: 返回相关文档
     ER-->>Agent: 返回上下文
     Agent->>LLM: 发送查询和上下文
     LLM-->>Agent: 生成回答或工具调用
+    Agent->>Logger: 记录工具调用
     Agent->>MCP: 执行工具调用
     MCP-->>Agent: 返回工具结果
     Agent->>LLM: 发送工具结果
@@ -155,6 +166,8 @@ sequenceDiagram
   - `vector_store.py`: 向量存储实现
   - `mcp_tools.py`: MCP 工具定义
   - `utils/`: 工具函数
+    - `info.py`: 项目信息和配置
+    - `pretty.py`: 统一日志输出系统
 - `rag_example.py`: RAG 示例程序
 - `justfile`: 任务运行配置文件
 
