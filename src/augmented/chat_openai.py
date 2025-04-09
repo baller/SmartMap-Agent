@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from rich import print as rprint
 
 from augmented.utils import pretty
+from augmented.utils.info import DEFAULT_MODEL_NAME
 
 PRETTY_LOGGER = pretty.ALogger("[ChatOpenAI]")
 
@@ -147,7 +148,7 @@ class AsyncChatOpenAI:
 
 async def example() -> None:
     llm = AsyncChatOpenAI(
-        model="gpt-4o-mini",
+        model=DEFAULT_MODEL_NAME,
     )
     chat_resp = await llm.chat(prompt="Hello")
     rprint(chat_resp)

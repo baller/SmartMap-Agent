@@ -8,7 +8,7 @@ from augmented.chat_openai import AsyncChatOpenAI
 from augmented.mcp_client import MCPClient
 from augmented.mcp_tools import PresetMcpTools
 from augmented.utils import pretty
-from augmented.utils.info import PROJECT_ROOT_DIR
+from augmented.utils.info import DEFAULT_MODEL_NAME, PROJECT_ROOT_DIR
 
 PRETTY_LOGGER = pretty.ALogger("[Agent]")
 
@@ -99,7 +99,7 @@ async def example() -> None:
         enabled_mcp_clients.append(mcp_client)
 
     agent = Agent(
-        model="gpt-4o-mini",
+        model=DEFAULT_MODEL_NAME,
         mcp_clients=enabled_mcp_clients,
     )
     await agent.init()

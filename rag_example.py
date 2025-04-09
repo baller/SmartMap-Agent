@@ -6,7 +6,7 @@ from augmented.embedding_retriever import EembeddingRetriever
 from augmented.mcp_client import MCPClient
 from augmented.mcp_tools import PresetMcpTools
 from augmented.utils import pretty
-from augmented.utils.info import PROJECT_ROOT_DIR
+from augmented.utils.info import DEFAULT_MODEL_NAME, PROJECT_ROOT_DIR
 from augmented.vector_store import VectorStoreItem
 
 
@@ -65,7 +65,7 @@ async def rag():
     context = await retrieve_context(prompt)
 
     agent = Agent(
-        model="gpt-4o-mini",
+        model=DEFAULT_MODEL_NAME,
         mcp_clients=ENABLED_MCP_CLIENTS,
         context=context,
     )
