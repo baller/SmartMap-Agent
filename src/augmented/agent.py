@@ -8,6 +8,7 @@ from rich import print as rprint
 
 from augmented.chat_openai import AsyncChatOpenAI
 from augmented.mcp_client import MCPClient
+from augmented.mcp_tools import PresetMcpTools
 from augmented.utils import pretty
 from augmented.utils.info import PROJECT_ROOT_DIR
 
@@ -78,43 +79,14 @@ class Agent:
                 return chat_resp.content
 
 
-class McpCmdOptions:
-    uvx_use_cn_mirror = (
-        ("--extra-index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple")
-        if os.environ.get("USE_CN_MIRROR")
-        else ""
-    )
-    npx_use_cn_mirror = (
-        ("--registry https://registry.npmmirror.com")
-        if os.environ.get("USE_CN_MIRROR")
-        else ""
-    )
-    fetch_server_mcp_use_proxy = (
-        f"--proxy-url {os.environ.get('PROXY_URL')}"
-        if os.environ.get("PROXY_URL")
-        else ""
-    )
-
-
 async def example() -> None:
     enabled_mcp_clients = []
-    for mcp_name, cmd in [
-        (
-            "filesystem",
-            f"npx {McpCmdOptions.npx_use_cn_mirror} -y @modelcontextprotocol/server-filesystem {PROJECT_ROOT_DIR!s}",
-        ),
-        (
-            "fetch",
-            f"uvx {McpCmdOptions.uvx_use_cn_mirror} mcp-server-fetch {McpCmdOptions.fetch_server_mcp_use_proxy}".strip(),
-        ),
+    for mcp_tool in [
+        PresetMcpTools.filesystem.append_mcp_params(f" {PROJECT_ROOT_DIR!s}"),
+        PresetMcpTools.fetch,
     ]:
-        rprint(cmd)
-        command, *args = shlex.split(cmd)
-        mcp_client = MCPClient(
-            name=mcp_name,
-            command=command,
-            args=args,
-        )
+        rprint(mcp_tool.shell_cmd)
+        mcp_client = MCPClient(**mcp_tool.to_common_params())
         enabled_mcp_clients.append(mcp_client)
 
     agent = Agent(

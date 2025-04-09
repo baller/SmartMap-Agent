@@ -14,6 +14,7 @@ from rich import print as rprint
 
 from dotenv import load_dotenv
 
+from augmented.mcp_tools import PresetMcpTools
 from augmented.utils.info import PROJECT_ROOT_DIR
 from augmented.utils.pretty import log_title
 
@@ -76,23 +77,12 @@ class MCPClient:
 
 
 async def example() -> None:
-    for mcp_name, cmd in [
-        (
-            "filesystem",
-            f"npx -y @modelcontextprotocol/server-filesystem {PROJECT_ROOT_DIR!s}",
-        ),
-        (
-            "fetch",
-            "uvx mcp-server-fetch",
-        ),
+    for mcp_tool in [
+        PresetMcpTools.filesystem.append_mcp_params(f" {PROJECT_ROOT_DIR!s}"),
+        PresetMcpTools.fetch,
     ]:
-        log_title(mcp_name)
-        command, *args = shlex.split(cmd)
-        mcp_client = MCPClient(
-            name=mcp_name,
-            command=command,
-            args=args,
-        )
+        rprint(mcp_tool.shell_cmd)
+        mcp_client = MCPClient(**mcp_tool.to_common_params())
         await mcp_client.init()
         tools = mcp_client.get_tools()
         rprint(tools)
