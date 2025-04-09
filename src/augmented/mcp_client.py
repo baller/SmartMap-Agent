@@ -3,7 +3,6 @@ modified from https://modelcontextprotocol.io/quickstart/client  in tab 'python'
 """
 
 import asyncio
-import shlex
 from typing import Any, Optional
 from contextlib import AsyncExitStack
 

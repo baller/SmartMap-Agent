@@ -1,5 +1,4 @@
 import asyncio
-import shlex
 from augmented.agent import Agent
 from rich import print as rprint
 
@@ -24,11 +23,15 @@ for mcp_tool in [
 KNOWLEDGE_BASE_DIR = PROJECT_ROOT_DIR / "output3" / "step4-rag" / "kownledge"
 KNOWLEDGE_BASE_DIR.mkdir(parents=True, exist_ok=True)
 
+PRETTY_LOGGER = pretty.ALogger("[RAG]")
+
 
 async def prepare_knowleage_data():
-    pretty.log_title("[RAG] prepare_knowleage_data")
+    PRETTY_LOGGER.title("PREPARE_KNOWLEAGE_DATA")
     if list(KNOWLEDGE_BASE_DIR.glob("*.md")):
-        rprint("[green]knowledge base already exists, skip prepare_knowleage_data[/green]")
+        rprint(
+            "[green]knowledge base already exists, skip prepare_knowleage_data[/green]"
+        )
         return
     agent = Agent(
         model="gpt-4o-mini",
@@ -51,7 +54,7 @@ async def retrieve_context(prompt: str):
         await er.embed_documents(document)
 
     context: list[VectorStoreItem] = await er.retrieve(prompt)
-    pretty.log_title("CONTEXT")
+    PRETTY_LOGGER.title("CONTEXT")
     rprint(context)
     return "\n".join([c.document for c in context])
 

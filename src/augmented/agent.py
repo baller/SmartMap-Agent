@@ -1,8 +1,6 @@
 import asyncio
 from dataclasses import dataclass
 import json
-import os
-import shlex
 
 from rich import print as rprint
 
@@ -11,6 +9,8 @@ from augmented.mcp_client import MCPClient
 from augmented.mcp_tools import PresetMcpTools
 from augmented.utils import pretty
 from augmented.utils.info import PROJECT_ROOT_DIR
+
+PRETTY_LOGGER = pretty.ALogger("[Agent]")
 
 
 @dataclass
@@ -22,7 +22,7 @@ class Agent:
     context: str = ""
 
     async def init(self) -> None:
-        pretty.log_title("[Agent] INIT LLM&TOOLS")
+        PRETTY_LOGGER.title("INIT LLM&TOOLS")
         tools = []
         for mcp_client in self.mcp_clients:
             await mcp_client.init()
@@ -35,7 +35,7 @@ class Agent:
         )
 
     async def cleanup(self) -> None:
-        pretty.log_title("[Agent] CLEANUP LLM&TOOLS")
+        PRETTY_LOGGER.title("CLEANUP LLM&TOOLS")
         while self.mcp_clients:
             # NOTE: 需要先处理其他依赖于mcp_client的资源, 不然会有一堆错误, 如
             # RuntimeError: Attempted to exit cancel scope in a different task than it was entered in
@@ -57,7 +57,7 @@ class Agent:
         chat_resp = await self.llm.chat(prompt)
         i = 0
         while True:
-            pretty.log_title(f"INVOKE CYCLE {i}")
+            PRETTY_LOGGER.title(f"INVOKE CYCLE {i}")
             i += 1
             # 处理工具调用
             rprint(chat_resp)
@@ -71,7 +71,7 @@ class Agent:
                             target_mcp_client = mcp_client
                             break
                     if target_mcp_client:
-                        pretty.log_title(f"TOOL USE `{tool_call.function.name}`")
+                        PRETTY_LOGGER.title(f"TOOL USE `{tool_call.function.name}`")
                         rprint("with args:", tool_call.function.arguments)
                         mcp_result = await target_mcp_client.call_tool(
                             tool_call.function.name,

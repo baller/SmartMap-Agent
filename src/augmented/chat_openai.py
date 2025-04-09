@@ -15,6 +15,8 @@ from rich import print as rprint
 
 from augmented.utils import pretty
 
+PRETTY_LOGGER = pretty.ALogger("[ChatOpenAI]")
+
 dotenv.load_dotenv()
 
 
@@ -57,7 +59,7 @@ class AsyncChatOpenAI:
     async def chat(
         self, prompt: str = "", print_llm_output: bool = True
     ) -> ChatOpenAIChatResponse:
-        pretty.log_title("CHAT")
+        PRETTY_LOGGER.title("CHAT")
         if prompt:
             self.messages.append({"role": "user", "content": prompt})
 
@@ -67,7 +69,7 @@ class AsyncChatOpenAI:
             tools=self.getToolsDefinition(),
             stream=True,
         )
-        pretty.log_title("RESPONSE")
+        PRETTY_LOGGER.title("RESPONSE")
         content = ""
         tool_calls: list[ToolCall] = []
         printed_llm_output = False
@@ -89,7 +91,9 @@ class AsyncChatOpenAI:
                         this_tool_call.id += tool_call.id or ""
                     if tool_call.function:
                         if tool_call.function.name:
-                            this_tool_call.function.name += tool_call.function.name or ""
+                            this_tool_call.function.name += (
+                                tool_call.function.name or ""
+                            )
                         if tool_call.function.arguments:
                             this_tool_call.function.arguments += (
                                 tool_call.function.arguments or ""
