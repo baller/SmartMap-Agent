@@ -20,7 +20,7 @@ for mcp_tool in [
     ENABLED_MCP_CLIENTS.append(mcp_client)
 
 
-KNOWLEDGE_BASE_DIR = PROJECT_ROOT_DIR / "output3" / "step4-rag" / "kownledge"
+KNOWLEDGE_BASE_DIR = PROJECT_ROOT_DIR / "output" / "step4-rag" / "kownledge"
 KNOWLEDGE_BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 PRETTY_LOGGER = pretty.ALogger("[RAG]")
