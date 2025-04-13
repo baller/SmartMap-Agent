@@ -1,4 +1,4 @@
-# NOTE: using python-dotenv to inject .env files
+# NOTE: now using python-dotenv to inject .env files, not need these configs
 # set dotenv-required
 # set dotenv-load
 # set dotenv-filename := '.env.local'

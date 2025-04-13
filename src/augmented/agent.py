@@ -36,6 +36,7 @@ class Agent:
 
     async def cleanup(self) -> None:
         PRETTY_LOGGER.title("CLEANUP LLM&TOOLS")
+
         while self.mcp_clients:
             # NOTE: 需要先处理其他依赖于mcp_client的资源, 不然会有一堆错误, 如
             # RuntimeError: Attempted to exit cancel scope in a different task than it was entered in
@@ -90,24 +91,32 @@ class Agent:
 
 async def example() -> None:
     enabled_mcp_clients = []
-    for mcp_tool in [
-        PresetMcpTools.filesystem.append_mcp_params(f" {PROJECT_ROOT_DIR!s}"),
-        PresetMcpTools.fetch,
-    ]:
-        rprint(mcp_tool.shell_cmd)
-        mcp_client = MCPClient(**mcp_tool.to_common_params())
-        enabled_mcp_clients.append(mcp_client)
+    agent = None
+    try:
+        for mcp_tool in [
+            PresetMcpTools.filesystem.append_mcp_params(f" {PROJECT_ROOT_DIR!s}"),
+            PresetMcpTools.fetch,
+        ]:
+            rprint(mcp_tool.shell_cmd)
+            mcp_client = MCPClient(**mcp_tool.to_common_params())
+            enabled_mcp_clients.append(mcp_client)
 
-    agent = Agent(
-        model=DEFAULT_MODEL_NAME,
-        mcp_clients=enabled_mcp_clients,
-    )
-    await agent.init()
-    resp = await agent.invoke(
-        f"爬取 https://news.ycombinator.com 的内容, 并且总结后保存在 {PROJECT_ROOT_DIR / 'output' / 'step3-agent-with-mcp'!s} 目录下的news.md文件中"
-    )
-    rprint(resp)
-    await agent.cleanup()
+        agent = Agent(
+            model=DEFAULT_MODEL_NAME,
+            mcp_clients=enabled_mcp_clients,
+        )
+        await agent.init()
+
+        resp = await agent.invoke(
+            f"爬取 https://news.ycombinator.com 的内容, 并且总结后保存在 {PROJECT_ROOT_DIR / 'output' / 'step3-agent-with-mcp'!s} 目录下的news.md文件中"
+        )
+        rprint(resp)
+    except Exception as e:
+        rprint(f"Error during agent execution: {e!s}")
+        raise
+    finally:
+        if agent:
+            await agent.cleanup()
 
 
 if __name__ == "__main__":

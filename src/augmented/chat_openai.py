@@ -60,45 +60,54 @@ class AsyncChatOpenAI:
     async def chat(
         self, prompt: str = "", print_llm_output: bool = True
     ) -> ChatOpenAIChatResponse:
+        try:
+            return await self._chat(prompt, print_llm_output)
+        except Exception as e:
+            rprint(f"Error during chat: {e!s}")
+            raise
+
+    async def _chat(
+        self, prompt: str = "", print_llm_output: bool = True
+    ) -> ChatOpenAIChatResponse:
         PRETTY_LOGGER.title("CHAT")
         if prompt:
             self.messages.append({"role": "user", "content": prompt})
 
-        streaming = await self.llm.chat.completions.create(
+        content = ""
+        tool_calls: list[ToolCall] = []
+        printed_llm_output = False
+        async with await self.llm.chat.completions.create(
             model=self.model,
             messages=self.messages,
             tools=self.getToolsDefinition(),
             stream=True,
-        )
-        PRETTY_LOGGER.title("RESPONSE")
-        content = ""
-        tool_calls: list[ToolCall] = []
-        printed_llm_output = False
-        async for chunk in streaming:
-            delta = chunk.choices[0].delta
-            # 处理 content
-            if delta.content:
-                content += delta.content or ""
-                if print_llm_output:
-                    print(delta.content, end="")
-                    printed_llm_output = True
-            # 处理 tool_calls
-            if delta.tool_calls:
-                for tool_call in delta.tool_calls:
-                    if len(tool_calls) <= tool_call.index:
-                        tool_calls.append(ToolCall())
-                    this_tool_call = tool_calls[tool_call.index]
-                    if tool_call.id:
-                        this_tool_call.id += tool_call.id or ""
-                    if tool_call.function:
-                        if tool_call.function.name:
-                            this_tool_call.function.name += (
-                                tool_call.function.name or ""
-                            )
-                        if tool_call.function.arguments:
-                            this_tool_call.function.arguments += (
-                                tool_call.function.arguments or ""
-                            )
+        ) as stream:
+            PRETTY_LOGGER.title("RESPONSE")
+            async for chunk in stream:
+                delta = chunk.choices[0].delta
+                # 处理 content
+                if delta.content:
+                    content += delta.content or ""
+                    if print_llm_output:
+                        print(delta.content, end="")
+                        printed_llm_output = True
+                # 处理 tool_calls
+                if delta.tool_calls:
+                    for tool_call in delta.tool_calls:
+                        if len(tool_calls) <= tool_call.index:
+                            tool_calls.append(ToolCall())
+                        this_tool_call = tool_calls[tool_call.index]
+                        if tool_call.id:
+                            this_tool_call.id += tool_call.id or ""
+                        if tool_call.function:
+                            if tool_call.function.name:
+                                this_tool_call.function.name += (
+                                    tool_call.function.name or ""
+                                )
+                            if tool_call.function.arguments:
+                                this_tool_call.function.arguments += (
+                                    tool_call.function.arguments or ""
+                                )
         if printed_llm_output:
             print()
         self.messages.append(

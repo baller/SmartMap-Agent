@@ -19,7 +19,7 @@ class VectorStore:
     def search(
         self, query_embedding: list[float], top_k: int = 5
     ) -> list[VectorStoreItem]:
-        result =  sorted(
+        result = sorted(
             self.items,
             key=lambda item: self._cosine_similarity(query_embedding, item.embedding),
             reverse=True,
