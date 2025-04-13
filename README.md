@@ -105,12 +105,12 @@ classDiagram
 2. 克隆本仓库
 3. 复制 `.env.example` 为 `.env` 并填写必要的配置信息：
    - `OPENAI_API_KEY`: OpenAI API 密钥
-   - `OPENAI_BASE_URL`: OpenAI API 基础 URL
-   - `DEFAULT_MODEL_NAME`: 默认使用的模型名称（可选，默认为 "gpt-4o-mini"）
-   - `EMBEDDING_KEY`: 嵌入模型 API 密钥（可选，默认使用 OPENAI_API_KEY）
-   - `EMBEDDING_BASE_URL`: 嵌入模型 API 基础 URL, 如硅基流动的API或兼容OpenAI格式的API （可选，默认使用 OPENAI_BASE_URL）
-   - `USE_CN_MIRROR`: 是否使用中国镜像（可选）仅不设置为 false
-   - `PROXY_URL`: 代理 URL（可选）, 仅不设置为 false
+   - `OPENAI_BASE_URL`: OpenAI API 基础 URL, 注意要保留后面的'/v1' (默认为 'https://api.openai.com/v1')
+   - `DEFAULT_MODEL_NAME`: (可选) 默认使用的模型名称（默认为 "gpt-4o-mini"）
+   - `EMBEDDING_KEY`: (可选) 嵌入模型 API 密钥（默认为 $OPENAI_API_KEY）
+   - `EMBEDDING_BASE_URL`: (可选) 嵌入模型 API 基础 URL, 如硅基流动的API或兼容OpenAI格式的API （默认为 $OPENAI_BASE_URL）
+   - `USE_CN_MIRROR`: (可选) 是否使用中国镜像, 设置任意值(如'1')为 true (默认为 false)
+   - `PROXY_URL`: (可选) 代理 URL (如 "http(s)://xxx"), 用于 `fetch` (mcp-tool) 走代理
 
 ### 安装依赖
 
