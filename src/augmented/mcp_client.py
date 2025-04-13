@@ -39,7 +39,10 @@ class MCPClient:
         await self._connect_to_server()
 
     async def cleanup(self) -> None:
-        await self.exit_stack.aclose()
+        try:
+            await self.exit_stack.aclose()
+        except Exception as e:
+            rprint(f"Error during MCP client cleanup, but ignore!: {e!s}")
 
     def get_tools(self) -> list[Tool]:
         return self.tools
