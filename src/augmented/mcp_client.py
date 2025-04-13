@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 from augmented.mcp_tools import PresetMcpTools
 from augmented.utils.info import PROJECT_ROOT_DIR
+from augmented.utils.pretty import RICH_CONSOLE
 
 load_dotenv()
 
@@ -41,8 +42,9 @@ class MCPClient:
     async def cleanup(self) -> None:
         try:
             await self.exit_stack.aclose()
-        except Exception as e:
-            rprint(f"Error during MCP client cleanup, but ignore!: {e!s}")
+        except Exception:
+            rprint("Error during MCP client cleanup, traceback and continue!")
+            RICH_CONSOLE.print_exception()
 
     def get_tools(self) -> list[Tool]:
         return self.tools

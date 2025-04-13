@@ -42,12 +42,7 @@ class Agent:
             # RuntimeError: Attempted to exit cancel scope in a different task than it was entered in
             # RuntimeError: Attempted to exit a cancel scope that isn't the current tasks's current cancel scope an error occurred during closing of asynchronous generator <async_generator object stdio_client at 0x76c3e08ee0c0>
             mcp_client = self.mcp_clients.pop()
-            try:
-                await mcp_client.cleanup()
-            except Exception as e:
-                rprint(
-                    f"cleanup mcp_client {mcp_client.name} failed but continue! context: {e!s}"
-                )
+            await mcp_client.cleanup()
 
     async def invoke(self, prompt: str) -> str | None:
         return await self._invoke(prompt)

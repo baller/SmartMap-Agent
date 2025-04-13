@@ -114,7 +114,7 @@ class AsyncChatOpenAI:
             {
                 "role": "assistant",
                 "content": content,
-                "tool_calls": [
+                "": [
                     {
                         "type": "function",
                         "id": tc.id,

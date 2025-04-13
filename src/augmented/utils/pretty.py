@@ -4,6 +4,10 @@ from rich.rule import Rule
 from rich.text import Text
 from rich import print as rprint
 
+from rich.console import Console
+
+RICH_CONSOLE = Console()
+
 
 @dataclass
 class ALogger:
