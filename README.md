@@ -66,7 +66,7 @@ classDiagram
         +system_prompt: str
         +context: str
         +chat(prompt: str, print_llm_output: bool)
-        +getToolsDefinition()
+        +get_tools_definition()
         +append_tool_result(tool_call_id: str, tool_output: str)
     }
 
