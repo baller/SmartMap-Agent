@@ -8,14 +8,9 @@ default: help
 help:
     @echo "`just -l`"
 
-format:
+format-and-lintfix:
 	ruff format
-
-lintfix:
 	ruff check --fix
-
-format-lintfix: format lintfix
-	@echo done
 
 # step 0: init with utils
 run_example_0_pretty:

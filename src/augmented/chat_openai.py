@@ -1,7 +1,7 @@
 import asyncio
 import os
 from mcp import Tool
-from openai import AsyncOpenAI
+from openai import NOT_GIVEN, AsyncOpenAI
 from dataclasses import dataclass, field
 
 from openai.types import FunctionDefinition
@@ -76,10 +76,11 @@ class AsyncChatOpenAI:
         content = ""
         tool_calls: list[ToolCall] = []
         printed_llm_output = False
+        param_tools = self.get_tools_definition() or NOT_GIVEN
         async with await self.llm.chat.completions.create(
             model=self.model,
             messages=self.messages,
-            tools=self.getToolsDefinition(),
+            tools=param_tools,
             stream=True,
         ) as stream:
             PRETTY_LOGGER.title("RESPONSE")
@@ -114,7 +115,7 @@ class AsyncChatOpenAI:
             {
                 "role": "assistant",
                 "content": content,
-                "": [
+                "tool_calls": [
                     {
                         "type": "function",
                         "id": tc.id,
@@ -132,7 +133,7 @@ class AsyncChatOpenAI:
             tool_calls=tool_calls,
         )
 
-    def getToolsDefinition(self) -> list[ChatCompletionToolParam]:
+    def get_tools_definition(self) -> list[ChatCompletionToolParam]:
         return [
             ChatCompletionToolParam(
                 type="function",

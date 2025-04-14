@@ -9,7 +9,6 @@ from augmented.utils import pretty
 from augmented.utils.info import DEFAULT_MODEL_NAME, PROJECT_ROOT_DIR
 from augmented.vector_store import VectorStoreItem
 
-
 ENABLED_MCP_CLIENTS = []
 for mcp_tool in [
     PresetMcpTools.filesystem.append_mcp_params(f" {PROJECT_ROOT_DIR!s}"),
@@ -34,7 +33,7 @@ async def prepare_knowleage_data():
         )
         return
     agent = Agent(
-        model="gpt-4o-mini",
+        model=DEFAULT_MODEL_NAME,
         mcp_clients=ENABLED_MCP_CLIENTS,
     )
     try:
