@@ -12,6 +12,16 @@ format-and-lintfix:
 	ruff format
 	ruff check --fix
 
+dev-all-example-check:
+	mv output output_bak || true
+	just run_example_0_pretty
+	just run_example_1_chat_openai
+	just run_example_2_mcp_client
+	just run_example_3_agent
+	just run_example_4_rag
+	rm -rf output
+	mv output_bak output
+
 # step 0: init with utils
 run_example_0_pretty:
 	uv run src/augmented/utils/pretty.py
