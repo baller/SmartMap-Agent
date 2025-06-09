@@ -5,7 +5,7 @@ description = "learn and practice from https://github.com/KelvinQiu802/llm-mcp-r
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "httpx>=0.28.1",
+    "httpx[socks]>=0.28.1",
     "mcp>=1.6.0",
     "openai>=1.71.0",
     "pydantic>=2.11.2",

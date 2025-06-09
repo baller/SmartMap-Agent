@@ -1,3 +1,8 @@
+"""
+Travel Assistant OpenAI Chat Client
+基于参考项目的 OpenAI 客户端实现
+"""
+
 import asyncio
 import os
 from mcp import Tool
@@ -13,10 +18,10 @@ import dotenv
 from pydantic import BaseModel
 from rich import print as rprint
 
-from augmented.utils import pretty
-from augmented.utils.info import DEFAULT_MODEL_NAME
+from src.utils import pretty
+from src.utils.info import DEFAULT_MODEL_NAME, OPENAI_API_KEY, OPENAI_BASE_URL
 
-PRETTY_LOGGER = pretty.ALogger("[ChatOpenAI]")
+LOGGER = pretty.ALogger("[ChatOpenAI]")
 
 dotenv.load_dotenv()
 
@@ -48,9 +53,9 @@ class AsyncChatOpenAI:
     llm: AsyncOpenAI = field(init=False)
 
     def __post_init__(self) -> None:
-       # 硅基流动 API 配置
+        # API 配置
         api_key = os.environ.get("SILICONFLOW_API_KEY") or os.environ.get("OPENAI_API_KEY")
-        base_url = os.environ.get("SILICONFLOW_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or "https://api.siliconflow.cn/v1"
+        base_url = os.environ.get("SILICONFLOW_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or "https://api.openai.com/v1"
         
         if not api_key:
             raise ValueError("请设置 SILICONFLOW_API_KEY 或 OPENAI_API_KEY 环境变量")
@@ -59,6 +64,8 @@ class AsyncChatOpenAI:
             api_key=api_key,
             base_url=base_url,
         )
+        
+        # 初始化消息
         if self.system_prompt:
             self.messages.insert(0, {"role": "system", "content": self.system_prompt})
         if self.context:
@@ -67,16 +74,17 @@ class AsyncChatOpenAI:
     async def chat(
         self, prompt: str = "", print_llm_output: bool = True
     ) -> ChatOpenAIChatResponse:
+        """发起聊天对话"""
         try:
             return await self._chat(prompt, print_llm_output)
         except Exception as e:
-            rprint(f"Error during chat: {e!s}")
+            LOGGER.error(f"Error during chat: {e}")
             raise
 
     async def _chat(
         self, prompt: str = "", print_llm_output: bool = True
     ) -> ChatOpenAIChatResponse:
-        PRETTY_LOGGER.title("CHAT")
+        LOGGER.title("CHAT")
         if prompt:
             self.messages.append({"role": "user", "content": prompt})
 
@@ -84,13 +92,14 @@ class AsyncChatOpenAI:
         tool_calls: list[ToolCall] = []
         printed_llm_output = False
         param_tools = self.get_tools_definition() or NOT_GIVEN
+        
         async with await self.llm.chat.completions.create(
             model=self.model,
             messages=self.messages,
             tools=param_tools,
             stream=True,
         ) as stream:
-            PRETTY_LOGGER.title("RESPONSE")
+            LOGGER.title("RESPONSE")
             async for chunk in stream:
                 delta = chunk.choices[0].delta
                 # 处理 content
@@ -116,8 +125,11 @@ class AsyncChatOpenAI:
                                 this_tool_call.function.arguments += (
                                     tool_call.function.arguments or ""
                                 )
+        
         if printed_llm_output:
             print()
+            
+        # 添加助手回复到消息历史
         self.messages.append(
             {
                 "role": "assistant",
@@ -141,6 +153,7 @@ class AsyncChatOpenAI:
         )
 
     def get_tools_definition(self) -> list[ChatCompletionToolParam]:
+        """获取工具定义"""
         return [
             ChatCompletionToolParam(
                 type="function",
@@ -154,6 +167,7 @@ class AsyncChatOpenAI:
         ]
 
     def append_tool_result(self, tool_call_id: str, tool_output: str) -> None:
+        """添加工具调用结果到消息历史"""
         self.messages.append(
             {
                 "role": "tool",
@@ -162,14 +176,11 @@ class AsyncChatOpenAI:
             }
         )
 
+    def get_message_history(self) -> list[ChatCompletionMessageParam]:
+        """获取消息历史"""
+        return self.messages.copy()
 
-async def example() -> None:
-    llm = AsyncChatOpenAI(
-        model=DEFAULT_MODEL_NAME,
-    )
-    chat_resp = await llm.chat(prompt="你是谁")
-    rprint(chat_resp)
-
-
-if __name__ == "__main__":
-    asyncio.run(example())
+    def clear_messages(self) -> None:
+        """清空消息历史（保留系统提示）"""
+        system_messages = [msg for msg in self.messages if msg.get("role") == "system"]
+        self.messages = system_messages 
