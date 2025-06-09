@@ -1,7 +1,7 @@
 .venv/
 .cursor/
 backend/.venv/
-
+frontend/.next/
 
 # Byte-compiled / optimized / DLL files
 frontend/node_modules
@@ -179,3 +179,5 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 .vscode/settings.json
+frontend/.next/build-manifest.json
+frontend/.next/build-manifest.json

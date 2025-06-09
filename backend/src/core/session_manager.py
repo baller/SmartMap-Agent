@@ -54,6 +54,7 @@ class SessionManager:
     def __init__(self):
         self.sessions: Dict[str, SessionData] = {}
         self.status_callbacks: Dict[str, List[Callable]] = {}
+        self.stream_callbacks: Dict[str, List[Callable]] = {}
         self._cleanup_task: Optional[asyncio.Task] = None
         self._agent_factory: Optional[Callable[[], TravelAgent]] = None
 
@@ -105,6 +106,7 @@ class SessionManager:
 
         self.sessions[session_id] = session_data
         self.status_callbacks[session_id] = []
+        self.stream_callbacks[session_id] = []
 
         LOGGER.success(f"Created session: {session_id}")
         return session_id
@@ -127,6 +129,10 @@ class SessionManager:
             # 清理状态回调
             if session_id in self.status_callbacks:
                 del self.status_callbacks[session_id]
+                
+            # 清理流式回调
+            if session_id in self.stream_callbacks:
+                del self.stream_callbacks[session_id]
 
             LOGGER.info(f"Deleted session: {session_id}")
 
@@ -164,6 +170,20 @@ class SessionManager:
             except ValueError:
                 pass
 
+    def add_stream_callback(self, session_id: str, callback: Callable[[str, Any], None]):
+        """添加流式回调函数"""
+        if session_id not in self.stream_callbacks:
+            self.stream_callbacks[session_id] = []
+        self.stream_callbacks[session_id].append(callback)
+
+    def remove_stream_callback(self, session_id: str, callback: Callable[[str, Any], None]):
+        """移除流式回调函数"""
+        if session_id in self.stream_callbacks:
+            try:
+                self.stream_callbacks[session_id].remove(callback)
+            except ValueError:
+                pass
+
     def _emit_status(self, session_id: str, status: str, details: str = ""):
         """发送状态更新到所有回调"""
         if session_id in self.sessions:
@@ -176,6 +196,15 @@ class SessionManager:
                     callback(status, details)
                 except Exception as e:
                     LOGGER.error(f"Error in status callback: {e}")
+
+    async def _emit_stream(self, session_id: str, stream_type: str, data: Any):
+        """发送流式数据到所有回调"""
+        if session_id in self.stream_callbacks:
+            for callback in self.stream_callbacks[session_id]:
+                try:
+                    await callback(stream_type, data)
+                except Exception as e:
+                    LOGGER.error(f"Error in stream callback: {e}")
 
     async def _get_or_create_agent(self, session_id: str) -> TravelAgent:
         """获取或创建 Agent 实例"""
@@ -192,6 +221,9 @@ class SessionManager:
             
             # 设置状态回调
             agent.set_status_callback(lambda status, details: self._emit_status(session_id, status, details))
+            
+            # 设置流式回调
+            agent.set_stream_callback(lambda stream_type, data: asyncio.create_task(self._emit_stream(session_id, stream_type, data)))
             
             # 初始化 Agent
             await agent.init()

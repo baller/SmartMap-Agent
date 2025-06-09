@@ -54,7 +54,12 @@ class ConnectionManager:
         def status_callback(status: str, details: str):
             asyncio.create_task(self.send_status(session_id, status, details))
         
+        # 添加流式回调
+        async def stream_callback(stream_type: str, data: Any):
+            await self.send_stream_data(session_id, stream_type, data)
+        
         session_manager.add_status_callback(session_id, status_callback)
+        session_manager.add_stream_callback(session_id, stream_callback)
         LOGGER.info(f"WebSocket connected for session: {session_id}")
 
     def disconnect(self, session_id: str):
@@ -84,6 +89,19 @@ class ConnectionManager:
                 }))
             except Exception as e:
                 LOGGER.error(f"Error sending message to {session_id}: {e}")
+
+    async def send_stream_data(self, session_id: str, stream_type: str, data: Any):
+        """发送流式数据"""
+        if session_id in self.active_connections:
+            try:
+                await self.active_connections[session_id].send_text(json.dumps({
+                    "type": "stream",
+                    "stream_type": stream_type,
+                    "data": data,
+                    "timestamp": datetime.now().isoformat()
+                }))
+            except Exception as e:
+                LOGGER.error(f"Error sending stream data to {session_id}: {e}")
 
 manager = ConnectionManager()
 

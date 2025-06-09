@@ -17,6 +17,6 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-# 启动开发服务器
-echo "🌐 启动 Next.js 开发服务器..."
-npm run dev 
+# 启动开发服务器，明确设置端口为3000
+echo "🌐 启动 Next.js 开发服务器 (端口3000)..."
+PORT=3000 npm run dev 

@@ -129,6 +129,7 @@ class TravelAgent:
     system_prompt: str = ""
     mcp_context_manager: MCPContextManager = None
     status_callback: Optional[Callable[[str, str], None]] = None
+    stream_callback: Optional[Callable[[str, Any], None]] = None
 
     def __post_init__(self):
         if self.mcp_context_manager is None:
@@ -167,6 +168,10 @@ class TravelAgent:
         """设置状态回调函数"""
         self.status_callback = callback
 
+    def set_stream_callback(self, callback: Callable[[str, Any], None]):
+        """设置流式回调函数"""
+        self.stream_callback = callback
+
     def _emit_status(self, status: str, details: str = ""):
         """发送状态更新"""
         if self.status_callback:
@@ -202,8 +207,58 @@ class TravelAgent:
         if self.llm is None:
             raise ValueError("Agent not initialized, call .init() first")
         
+        # 创建流式回调函数
+        async def handle_stream(stream_type: str, data: Any):
+            if self.stream_callback:
+                await self.stream_callback(stream_type, data)
+        
+        async def handle_tool_call(call_type: str, data: Any):
+            if self.stream_callback:
+                await self.stream_callback(call_type, data)
+        
+        # 发送思考过程模拟
         self._emit_status("thinking", "正在分析您的旅行需求...")
-        chat_resp = await self.llm.chat(prompt, print_llm_output=False)
+        if self.stream_callback:
+            # 分析用户请求
+            await self.stream_callback("reasoning", f"用户请求：{prompt}\n\n")
+            await asyncio.sleep(0.3)
+            
+            await self.stream_callback("reasoning", "分析步骤：\n")
+            await asyncio.sleep(0.2)
+            
+            await self.stream_callback("reasoning", "1. 识别关键信息：\n")
+            await asyncio.sleep(0.3)
+            
+            # 简单的关键词分析
+            key_info = []
+            if "天" in prompt or "日" in prompt:
+                await self.stream_callback("reasoning", "   - 发现时间信息\n")
+                key_info.append("时间")
+            if "预算" in prompt or "元" in prompt or "钱" in prompt:
+                await self.stream_callback("reasoning", "   - 发现预算信息\n")
+                key_info.append("预算")
+            if any(city in prompt for city in ["北京", "上海", "杭州", "广州", "深圳", "成都", "西安"]):
+                await self.stream_callback("reasoning", "   - 发现目的地信息\n")
+                key_info.append("目的地")
+            if any(keyword in prompt for keyword in ["亲子", "家庭", "孩子", "儿童"]):
+                await self.stream_callback("reasoning", "   - 发现旅行类型：亲子游\n")
+                key_info.append("亲子游")
+            
+            await asyncio.sleep(0.4)
+            await self.stream_callback("reasoning", "\n2. 确定需要的工具：\n")
+            await self.stream_callback("reasoning", "   - 地图搜索工具：查找景点和路线\n")
+            await self.stream_callback("reasoning", "   - 天气工具：获取天气预报\n")
+            await self.stream_callback("reasoning", "   - 行程规划工具：制定详细计划\n")
+            
+            await asyncio.sleep(0.3)
+            await self.stream_callback("reasoning", "\n3. 开始调用工具获取信息...\n\n")
+        
+        chat_resp = await self.llm.chat(
+            prompt, 
+            print_llm_output=False,
+            stream_callback=handle_stream,
+            tool_call_callback=handle_tool_call
+        )
         
         i = 0
         while True:
@@ -213,6 +268,20 @@ class TravelAgent:
             # 处理工具调用
             if chat_resp.tool_calls:
                 self._emit_status("calling_tools", f"正在调用 {len(chat_resp.tool_calls)} 个工具获取信息...")
+                
+                # 发送工具调用开始信息
+                if self.stream_callback:
+                    await self.stream_callback("tool_calls_start", {
+                        "tool_calls": [
+                            {
+                                "id": tc.id,
+                                "function_name": tc.function.name,
+                                "arguments": tc.function.arguments
+                            } for tc in chat_resp.tool_calls
+                        ]
+                    })
+                    # 暂停reasoning，开始工具调用
+                    await self.stream_callback("reasoning", "\n🔧 开始调用工具...\n")
                 
                 for tool_call in chat_resp.tool_calls:
                     target_mcp_client: MCPClient | None = None
@@ -226,6 +295,15 @@ class TravelAgent:
                         LOGGER.title(f"TOOL USE `{tool_call.function.name}`")
                         LOGGER.info(f"with args: {tool_call.function.arguments}")
                         
+                        # 发送工具调用详情
+                        if self.stream_callback:
+                            await self.stream_callback("tool_call_detail", {
+                                "tool_call_id": tool_call.id,
+                                "function_name": tool_call.function.name,
+                                "arguments": tool_call.function.arguments,
+                                "status": "calling"
+                            })
+                        
                         try:
                             mcp_result = await target_mcp_client.call_tool(
                                 tool_call.function.name,
@@ -235,17 +313,64 @@ class TravelAgent:
                             self.llm.append_tool_result(
                                 tool_call.id, mcp_result.model_dump_json()
                             )
+                            
+                            # 发送工具调用结果
+                            if self.stream_callback:
+                                await self.stream_callback("tool_call_result", {
+                                    "tool_call_id": tool_call.id,
+                                    "function_name": tool_call.function.name,
+                                    "result": str(mcp_result)[:500] + "..." if len(str(mcp_result)) > 500 else str(mcp_result),
+                                    "status": "success"
+                                })
+                                # 添加reasoning反馈
+                                await self.stream_callback("reasoning", f"✓ {tool_call.function.name} 调用成功，获得了相关信息\n")
                         except Exception as e:
                             LOGGER.error(f"Tool call failed: {e}")
                             self.llm.append_tool_result(tool_call.id, f"工具调用失败: {str(e)}")
+                            
+                            # 发送工具调用错误
+                            if self.stream_callback:
+                                await self.stream_callback("tool_call_result", {
+                                    "tool_call_id": tool_call.id,
+                                    "function_name": tool_call.function.name,
+                                    "error": str(e),
+                                    "status": "error"
+                                })
                     else:
                         LOGGER.warning(f"Tool {tool_call.function.name} not found")
                         self.llm.append_tool_result(tool_call.id, "工具未找到")
+                        
+                        # 发送工具未找到错误
+                        if self.stream_callback:
+                            await self.stream_callback("tool_call_result", {
+                                "tool_call_id": tool_call.id,
+                                "function_name": tool_call.function.name,
+                                "error": "工具未找到",
+                                "status": "not_found"
+                            })
                 
                 self._emit_status("processing", "正在处理工具返回的信息...")
-                chat_resp = await self.llm.chat(print_llm_output=False)
+                # 添加reasoning反馈
+                if self.stream_callback:
+                    await self.stream_callback("reasoning", "\n📝 处理工具返回的信息：\n")
+                    await asyncio.sleep(0.3)
+                    await self.stream_callback("reasoning", "   - 分析获取的景点数据\n")
+                    await self.stream_callback("reasoning", "   - 整合天气信息\n")
+                    await self.stream_callback("reasoning", "   - 考虑用户偏好和预算\n")
+                    await self.stream_callback("reasoning", "   - 优化行程安排\n")
+                    await asyncio.sleep(0.5)
+                    await self.stream_callback("reasoning", "\n🎯 开始生成最终的旅行方案...\n")
+                
+                chat_resp = await self.llm.chat(
+                    print_llm_output=False,
+                    stream_callback=handle_stream,
+                    tool_call_callback=handle_tool_call
+                )
             else:
                 self._emit_status("completed", "旅行规划完成")
+                # 最终reasoning总结
+                if self.stream_callback:
+                    await self.stream_callback("reasoning", "✅ 分析完成，开始生成最终的旅行计划\n")
                 return chat_resp.content
 
     def get_system_prompt(self) -> str:

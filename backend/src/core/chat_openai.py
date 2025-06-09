@@ -72,22 +72,24 @@ class AsyncChatOpenAI:
             self.messages.append({"role": "user", "content": self.context})
 
     async def chat(
-        self, prompt: str = "", print_llm_output: bool = True
+        self, prompt: str = "", print_llm_output: bool = True,
+        stream_callback: callable = None, tool_call_callback: callable = None
     ) -> ChatOpenAIChatResponse:
         """发起聊天对话"""
         try:
-            return await self._chat(prompt, print_llm_output)
+            return await self._chat(prompt, print_llm_output, stream_callback, tool_call_callback)
         except Exception as e:
             LOGGER.error(f"Error during chat: {e}")
             raise
 
     async def _chat(
-        self, prompt: str = "", print_llm_output: bool = True
+        self, prompt: str = "", print_llm_output: bool = True,
+        stream_callback: callable = None, tool_call_callback: callable = None
     ) -> ChatOpenAIChatResponse:
         LOGGER.title("CHAT")
         if prompt:
             self.messages.append({"role": "user", "content": prompt})
-
+            LOGGER.info(f"User: {prompt}")
         content = ""
         tool_calls: list[ToolCall] = []
         printed_llm_output = False
@@ -102,12 +104,23 @@ class AsyncChatOpenAI:
             LOGGER.title("RESPONSE")
             async for chunk in stream:
                 delta = chunk.choices[0].delta
+                # LOGGER.info(f"Delta: {delta}")
+                
+                # 处理 reasoning_content
+                if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                    if stream_callback:
+                        await stream_callback("reasoning", delta.reasoning_content)
+                
                 # 处理 content
                 if delta.content:
                     content += delta.content or ""
                     if print_llm_output:
                         print(delta.content, end="")
                         printed_llm_output = True
+                    # 流式内容回调
+                    if stream_callback:
+                        await stream_callback("content", delta.content)
+                        
                 # 处理 tool_calls
                 if delta.tool_calls:
                     for tool_call in delta.tool_calls:
@@ -125,6 +138,16 @@ class AsyncChatOpenAI:
                                 this_tool_call.function.arguments += (
                                     tool_call.function.arguments or ""
                                 )
+                        # 工具调用回调
+                        if tool_call_callback:
+                            await tool_call_callback("tool_call_chunk", {
+                                "index": tool_call.index,
+                                "id": tool_call.id,
+                                "function": {
+                                    "name": tool_call.function.name if tool_call.function else None,
+                                    "arguments": tool_call.function.arguments if tool_call.function else None
+                                }
+                            })
         
         if printed_llm_output:
             print()
