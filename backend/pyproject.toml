@@ -2,7 +2,6 @@
 name = "travel-assistant-backend"
 version = "0.1.0"
 description = "Travel Assistant Agent Backend with MCP Client"
-readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.104.1",
@@ -16,10 +15,11 @@ dependencies = [
     "rich>=14.0.0",
     "langchain>=0.1.0",
     "langchain-openai>=0.1.0",
-    "googlemaps>=4.10.0",
     "aiofiles>=23.2.1",
     "pandas>=2.1.0",
     "requests>=2.31.0",
+    # 百度地图 MCP Server
+    "baidu-map-mcp-server>=1.0.0",
 ]
 
 [dependency-groups]

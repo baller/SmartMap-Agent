@@ -4,7 +4,8 @@ Travel Assistant MCP Client
 """
 
 import asyncio
-from typing import Any, Optional
+import os
+from typing import Any, Optional, Dict
 from contextlib import AsyncExitStack
 
 from mcp import ClientSession, StdioServerParameters, Tool
@@ -27,6 +28,7 @@ class MCPClient:
         name: str,
         command: str,
         args: list[str],
+        env: Dict[str, str] = None,
         version: str = "0.0.1",
     ) -> None:
         self.session: Optional[ClientSession] = None
@@ -35,6 +37,7 @@ class MCPClient:
         self.version = version
         self.command = command
         self.args = args
+        self.env = env or {}
         self.tools: list[Tool] = []
 
     async def init(self) -> None:
@@ -57,9 +60,27 @@ class MCPClient:
 
     async def _connect_to_server(self) -> None:
         """连接到 MCP 服务器"""
+        # 准备环境变量
+        server_env = os.environ.copy()
+        
+        # 解析并添加工具特定的环境变量
+        for key, value in self.env.items():
+            if value.startswith("${") and value.endswith("}"):
+                # 从系统环境变量中获取值，如 ${BAIDU_MAP_API_KEY}
+                env_var_name = value[2:-1]  # 移除 ${ 和 }
+                env_value = os.getenv(env_var_name)
+                if env_value:
+                    server_env[key] = env_value
+                    LOGGER.success(f"Set environment variable {key} from {env_var_name}")
+                else:
+                    LOGGER.warning(f"{env_var_name} environment variable is not set")
+            else:
+                server_env[key] = value
+        
         server_params = StdioServerParameters(
             command=self.command,
             args=self.args,
+            env=server_env
         )
 
         try:

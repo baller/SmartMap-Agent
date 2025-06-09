@@ -10,7 +10,6 @@ import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
-from mcp.server.models import InitializeResult
 from mcp.server import NotificationOptions, Server
 from mcp.types import (
     Resource, Tool, TextContent, ImageContent, EmbeddedResource
@@ -845,13 +844,7 @@ async def main():
         await server.run(
             read_stream,
             write_stream,
-            InitializeResult(
-                protocolVersion="2024-11-05",
-                capabilities=server.get_capabilities(
-                    notification_options=NotificationOptions(),
-                    experimental_capabilities={},
-                ),
-            ),
+            server.create_initialization_options()
         )
 
 

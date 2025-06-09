@@ -1,107 +1,89 @@
 """
-Travel Assistant MCP Tools Configuration
-基于参考项目的 MCP 工具配置
+MCP Tools Configuration for Travel Assistant
+旅行助手的 MCP 工具配置
 """
 
 from dataclasses import dataclass
-import os
-import shlex
-from typing import Self
-
-from dotenv import load_dotenv
-
-load_dotenv()
-
+from typing import List, Dict, Any
+from pathlib import Path
+import sys
 
 @dataclass
 class McpToolInfo:
+    """MCP 工具信息"""
     name: str
-    shell_cmd_pattern: str
-    main_cmd_options: str = ""
-    mcp_params: str = ""
+    command: str
+    args: List[str]
+    env: Dict[str, str]
+    description: str = ""
 
-    @property
-    def shell_cmd(self) -> str:
-        return self.shell_cmd_pattern.format(
-            main_cmd_options=self.main_cmd_options,
-            mcp_params=self.mcp_params,
-        )
-
-    def append_mcp_params(self, params: str) -> Self:
-        if params:
-            self.mcp_params += params
-        return self
-
-    def append_main_cmd_options(self, options: str) -> Self:
-        if options:
-            self.main_cmd_options += options
-        return self
-
-    def to_common_params(self) -> dict[str, str]:
-        command, *args = shlex.split(self.shell_cmd)
-        return dict(
-            name=self.name,
-            command=command,
-            args=args,
-        )
-
-
-class McpCmdOptions:
-    uvx_use_cn_mirror = (
-        ("--extra-index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple")
-        if os.environ.get("USE_CN_MIRROR")
-        else ""
-    )
-    npx_use_cn_mirror = (
-        ("--registry https://registry.npmmirror.com")
-        if os.environ.get("USE_CN_MIRROR")
-        else ""
-    )
-    fetch_server_mcp_use_proxy = (
-        f"--proxy-url {os.environ.get('PROXY_URL')}"
-        if os.environ.get("PROXY_URL")
-        else ""
-    )
+    def to_common_params(self) -> Dict[str, Any]:
+        """转换为通用参数格式"""
+        return {
+            "name": self.name,
+            "command": self.command,
+            "args": self.args,
+            "env": self.env
+        }
 
 
 class TravelMcpTools:
-    """旅行助手的 MCP 工具配置"""
+    """旅行相关的 MCP 工具配置"""
     
-    # 基础工具
-    filesystem = McpToolInfo(
-        name="filesystem",
-        shell_cmd_pattern="npx {main_cmd_options} -y @modelcontextprotocol/server-filesystem {mcp_params}",
-    ).append_main_cmd_options(
-        McpCmdOptions.npx_use_cn_mirror,
-    )
-    
-    fetch = (
-        McpToolInfo(
-            name="fetch",
-            shell_cmd_pattern="uvx {main_cmd_options} mcp-server-fetch {mcp_params}",
+    @classmethod
+    def get_baidu_maps_tool(cls) -> McpToolInfo:
+        """百度地图工具配置"""
+        return McpToolInfo(
+            name="baidu-maps",
+            command="npx",
+            args=["-y", "@baidumap/mcp-server-baidu-map"],
+            env={"BAIDU_MAP_API_KEY": "${BAIDU_MAP_API_KEY}"},
+            description="百度地图 MCP Server，提供地理编码、地点检索、路线规划等功能"
         )
-        .append_main_cmd_options(
-            McpCmdOptions.uvx_use_cn_mirror,
+    
+    @classmethod  
+    def get_weather_tool(cls) -> McpToolInfo:
+        """天气工具配置"""
+        project_root = Path(__file__).parent.parent.parent
+        weather_server_path = project_root / "src" / "tools" / "weather_mcp_server.py"
+        
+        return McpToolInfo(
+            name="weather",
+            command=sys.executable,
+            args=[str(weather_server_path)],
+            env={"WEATHER_API_KEY": "${WEATHER_API_KEY}"},
+            description="天气查询工具，提供当前天气、天气预报和天气提醒"
         )
-        .append_mcp_params(
-            McpCmdOptions.fetch_server_mcp_use_proxy,
+    
+    @classmethod
+    def get_itinerary_tool(cls) -> McpToolInfo:
+        """行程规划工具配置"""
+        project_root = Path(__file__).parent.parent.parent
+        itinerary_server_path = project_root / "src" / "tools" / "itinerary_mcp_server.py"
+        
+        return McpToolInfo(
+            name="itinerary",
+            command=sys.executable,
+            args=[str(itinerary_server_path)],
+            env={},
+            description="行程规划工具，提供多日行程规划、路线优化、活动推荐和预算估算"
         )
-    )
+
+    # 兼容性属性（保持向后兼容）
+    @property
+    def maps(self) -> McpToolInfo:
+        """地图工具 - 现在使用百度地图"""
+        return self.get_baidu_maps_tool()
     
-    # 地图和地理信息工具 (使用自定义 Python MCP 服务器)
-    maps = McpToolInfo(
-        name="maps",
-        shell_cmd_pattern="python {main_cmd_options} src/tools/maps_mcp_server.py {mcp_params}",
-    )
+    @property
+    def weather(self) -> McpToolInfo:
+        """天气工具"""
+        return self.get_weather_tool()
     
-    # 天气信息工具
-    weather = McpToolInfo(
-        name="weather",
-        shell_cmd_pattern="python {main_cmd_options} src/tools/weather_mcp_server.py {mcp_params}",
-    )
-    
-    # 行程规划工具
-    itinerary = McpToolInfo(
-        name="itinerary",
-        shell_cmd_pattern="python {main_cmd_options} src/tools/itinerary_mcp_server.py {mcp_params}",
-    ) 
+    @property
+    def itinerary(self) -> McpToolInfo:
+        """行程规划工具"""
+        return self.get_itinerary_tool()
+
+# 创建实例供外部使用
+TravelMcpTools = TravelMcpTools() 

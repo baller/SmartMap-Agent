@@ -1,178 +1,272 @@
-# LLM-MCP-RAG 实验项目
+# 智能旅行助手 (Travel Assistant Agent)
 
-> 本项目是基于 [KelvinQiu802/llm-mcp-rag](https://github.com/KelvinQiu802/llm-mcp-rag) 的 Python 实现版本，用于学习和实践 LLM、MCP 和 RAG 技术。
->
-> 该项目作者有演示视频 见 https://www.bilibili.com/video/BV1dcRqYuECf/
->
-> 强烈建议先浏览其README, 本仓库对一些逻辑进行了微调和命名调整!
+基于 Model Context Protocol (MCP) 和 AI 大模型的智能旅行规划助手。为用户提供个性化的旅行计划，包括景点推荐、路线规划、预算估算等功能。
 
-## 项目简介
+## 🌟 特性
 
-本项目是一个基于大语言模型（LLM）、模型上下文协议（MCP）和检索增强生成（RAG）的实验性项目。它展示了如何构建一个能够与外部工具交互并利用检索增强生成技术的 AI 助手系统。
+- **🤖 AI 智能规划**: 基于 OpenAI GPT 模型的智能旅行规划
+- **🔧 MCP 工具集成**: 使用 Model Context Protocol 集成外部工具
+- **🗺️ 百度地图集成**: 国内首家兼容 MCP 协议的地图服务，获取真实的地点和路线信息
+- **🌤️ 天气数据支持**: 集成 OpenWeatherMap API，提供天气预报和建议
+- **💬 实时交互**: WebSocket 支持的实时对话和状态更新
+- **📱 现代化 UI**: 基于 React + Next.js + Tailwind CSS 的美观界面
+- **⚡ 流式响应**: 实时显示 AI 思考过程和工具调用状态
 
-### 核心功能
+## 🏗️ 系统架构
 
-- 基于 OpenAI API 的大语言模型调用
-- 通过 MCP（Model Context Protocol）实现 LLM 与外部工具的交互
-- 实现基于向量检索的 RAG（检索增强生成）系统
-- 支持文件系统操作和网页内容获取
-
-## 系统架构
-
-```mermaid
-graph TD
-    A[用户] -->|提问| B[Agent]
-    B -->|调用| C[LLM]
-    C -->|生成回答/工具调用| B
-    B -->|工具调用| D[MCP 客户端]
-    D -->|执行| E[MCP 服务器]
-    E -->|文件系统操作| F[文件系统]
-    E -->|网页获取| G[网页内容]
-    H[文档/知识库] -->|嵌入| I[向量存储-内存形式]
-    B -->|查询| I
-    I -->|相关上下文| B
+### 后端架构
+```
+backend/
+├── src/
+│   ├── core/           # 核心模块
+│   │   ├── travel_agent.py      # 主要 Agent 实现
+│   │   ├── mcp_client.py        # MCP 客户端
+│   │   ├── chat_openai.py       # OpenAI 客户端
+│   │   ├── session_manager.py   # 会话管理
+│   │   └── mcp_tools.py         # MCP 工具配置
+│   ├── tools/          # MCP 工具服务器
+│   │   ├── weather_mcp_server.py    # 天气工具
+│   │   └── itinerary_mcp_server.py  # 行程规划工具
+│   ├── api/            # FastAPI 应用
+│   │   └── main.py              # API 主程序
+│   └── utils/          # 工具模块
+│       ├── info.py              # 配置管理
+│       └── pretty.py            # 日志系统
 ```
 
-## 主要组件
-
-```mermaid
-classDiagram
-    class Agent {
-        +mcp_clients: list[MCPClient]
-        +model: str
-        +llm: AsyncChatOpenAI
-        +system_prompt: str
-        +context: str
-        +init()
-        +cleanup()
-        +invoke(prompt: str)
-    }
-
-    class MCPClient {
-        +name: str
-        +command: str
-        +args: list[str]
-        +version: str
-        +init()
-        +cleanup()
-        +get_tools()
-        +call_tool(name: str, params: dict)
-    }
-
-    class AsyncChatOpenAI {
-        +model: str
-        +messages: list
-        +tools: list[Tool]
-        +system_prompt: str
-        +context: str
-        +chat(prompt: str, print_llm_output: bool)
-        +get_tools_definition()
-        +append_tool_result(tool_call_id: str, tool_output: str)
-    }
-
-    class EembeddingRetriever {
-        +embedding_model: str
-        +vector_store: VectorStore
-        +embed_query(query: str)
-        +embed_documents(document: str)
-        +retrieve(query: str, top_k: int)
-    }
-
-    class VectorStore {
-        +items: list[VectorStoreItem]
-        +add(item: VectorStoreItem)
-        +search(query_embedding: list[float], top_k: int)
-    }
-
-    class ALogger {
-        +prefix: str
-        +title(text: str, rule_style: str)
-    }
-
-    Agent --> MCPClient
-    Agent --> AsyncChatOpenAI
-    Agent ..> EembeddingRetriever
-    EembeddingRetriever --> VectorStore
-    Agent ..> ALogger
-    AsyncChatOpenAI ..> ALogger
+### 前端架构
+```
+frontend/
+├── app/                # Next.js App Router
+│   ├── page.tsx                 # 主页面
+│   ├── layout.tsx               # 应用布局
+│   └── globals.css              # 全局样式
+└── components/         # React 组件
+    ├── TravelAssistant.tsx      # 主要聊天界面
+    ├── Header.tsx               # 应用头部
+    └── Welcome.tsx              # 欢迎页面
 ```
 
-## 快速开始
+## 🚀 快速开始
 
-### 环境准备
+### 环境要求
 
-1. 确保已安装 Python 3.12 或更高版本
-2. 克隆本仓库
-3. 复制 `.env.example` 为 `.env` 并填写必要的配置信息：
-   - `OPENAI_API_KEY`: OpenAI API 密钥
-   - `OPENAI_BASE_URL`: OpenAI API 基础 URL, 注意要保留后面的'/v1' (默认为 'https://api.openai.com/v1')
-   - `DEFAULT_MODEL_NAME`: (可选) 默认使用的模型名称（默认为 "gpt-4o-mini"）
-   - `EMBEDDING_KEY`: (可选) 嵌入模型 API 密钥（默认为 $OPENAI_API_KEY）
-   - `EMBEDDING_BASE_URL`: (可选) 嵌入模型 API 基础 URL, 如硅基流动的API或兼容OpenAI格式的API （默认为 $OPENAI_BASE_URL）
-   - `USE_CN_MIRROR`: (可选) 是否使用中国镜像, 设置任意值(如'1')为 true (默认为 false)
-   - `PROXY_URL`: (可选) 代理 URL (如 "http(s)://xxx"), 用于 `fetch` (mcp-tool) 走代理
+- Python 3.12+
+- Node.js 18+
+- 百度地图 API Key（推荐）
+- OpenAI API Key 或兼容的 API 服务
 
-### 安装依赖
+### 1. 克隆项目
 
 ```bash
-# 使用 uv 安装依赖
-uv sync
+git clone https://github.com/your-username/travel-assistant-agent.git
+cd travel-assistant-agent
 ```
 
-### 运行示例
-
-本项目使用 `just` 命令工具来运行不同的示例：
+### 2. 后端设置
 
 ```bash
-# 查看可用命令
-just help
+cd backend
+
+# 创建虚拟环境
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# 或
+venv\Scripts\activate     # Windows
+
+# 安装依赖
+pip install -e .
+
+# 配置环境变量
+cp env.example .env
+# 编辑 .env 文件，填入你的 API Keys
 ```
 
-## RAG 示例流程
+环境变量配置 (`.env`):
+```env
+# OpenAI/LLM Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1
+DEFAULT_MODEL_NAME=gpt-4o-mini
 
-```mermaid
-sequenceDiagram
-    participant User as 用户
-    participant Agent as Agent
-    participant LLM as LLM
-    participant ER as EmbeddingRetriever
-    participant VS as VectorStore
-    participant MCP as MCP客户端
-    participant Logger as ALogger
+# 百度地图 API 配置
+# 在 https://lbsyun.baidu.com/ 申请 AK
+BAIDU_MAP_API_KEY=your_baidu_map_api_key_here
 
-    User->>Agent: 提供查询
-    Agent->>Logger: 记录操作日志
-    Agent->>ER: 检索相关文档
-    ER->>VS: 查询向量存储
-    VS-->>ER: 返回相关文档
-    ER-->>Agent: 返回上下文
-    Agent->>LLM: 发送查询和上下文
-    LLM-->>Agent: 生成回答或工具调用
-    Agent->>Logger: 记录工具调用
-    Agent->>MCP: 执行工具调用
-    MCP-->>Agent: 返回工具结果
-    Agent->>LLM: 发送工具结果
-    LLM-->>Agent: 生成最终回答
-    Agent-->>User: 返回回答
+# 天气 API 配置 (可选)
+# 在 https://openweathermap.org/api 申请 API Key
+WEATHER_API_KEY=your_weather_api_key_here
 ```
 
-## 项目结构
+### 3. 前端设置
 
-- `src/augmented/`: 主要源代码目录
-  - `agent.py`: Agent 实现，负责协调 LLM 和工具
-  - `chat_openai.py`: OpenAI API 客户端封装
-  - `mcp_client.py`: MCP 客户端实现
-  - `embedding_retriever.py`: 嵌入检索器实现
-  - `vector_store.py`: 向量存储实现
-  - `mcp_tools.py`: MCP 工具定义
-  - `utils/`: 工具函数
-    - `info.py`: 项目信息和配置
-    - `pretty.py`: 统一日志输出系统
-- `rag_example.py`: RAG 示例程序
-- `justfile`: 任务运行配置文件
+```bash
+cd frontend
 
-## 学习资源
+# 安装依赖
+npm install
+```
 
-- [Model Context Protocol (MCP)](https://modelcontextprotocol.io/): 了解 MCP 协议
-- [OpenAI API 文档](https://platform.openai.com/docs/api-reference): OpenAI API 参考
-- [RAG (Retrieval-Augmented Generation)](https://arxiv.org/abs/2005.11401): RAG 技术论文
+### 4. 启动服务
+
+**启动后端服务:**
+```bash
+cd backend
+python src/api/main.py
+```
+后端将在 http://localhost:8000 启动
+
+**启动前端服务:**
+```bash
+cd frontend
+npm run dev
+```
+前端将在 http://localhost:3000 启动
+
+### 5. 开始使用
+
+访问 http://localhost:3000，开始与智能旅行助手对话！
+
+## 🔧 API 文档
+
+### REST API 端点
+
+- `POST /api/sessions` - 创建新会话
+- `GET /api/sessions` - 获取所有会话
+- `GET /api/sessions/{session_id}` - 获取特定会话
+- `DELETE /api/sessions/{session_id}` - 删除会话
+- `POST /api/plan` - 旅行规划（同步）
+- `GET /api/health` - 健康检查
+
+### WebSocket 接口
+
+- `ws://localhost:8000/ws/{session_id}` - 实时对话接口
+
+消息格式:
+```json
+{
+  "type": "travel_request",
+  "content": "我想在杭州玩3天"
+}
+```
+
+## 🛠️ MCP 工具
+
+### 百度地图工具 (百度地图 MCP Server)
+- `map_geocode` - 地址解析为坐标
+- `map_reverse_geocode` - 坐标解析为地址  
+- `map_search_places` - 搜索地点信息
+- `map_search_nearby` - 周边地点搜索
+- `map_place_detail` - 获取地点详情
+- `map_direction` - 路线规划
+- `map_distance` - 距离计算
+- `map_ip_location` - IP定位
+- `map_coordinate_convert` - 坐标转换
+- `map_static_image` - 静态地图
+
+### 天气工具 (weather_mcp_server.py)
+- `get_current_weather` - 当前天气
+- `get_weather_forecast` - 天气预报
+- `get_weather_alerts` - 天气提醒
+
+### 行程规划工具 (itinerary_mcp_server.py)
+- `plan_itinerary` - 多日行程规划
+- `optimize_route` - 路线优化
+- `suggest_activities` - 活动推荐
+- `calculate_budget` - 预算估算
+
+## 💡 使用示例
+
+### 基本旅行规划
+```
+用户: "我想在杭州玩3天，预算5000元，喜欢文化古迹和美食"
+
+助手: 我来为您规划杭州3天的文化美食之旅！
+
+[调用百度地图工具获取杭州景点信息...]
+[调用天气工具获取天气预报...]
+[调用行程规划工具生成行程安排...]
+
+为您推荐以下行程：
+
+第一天：西湖文化之旅
+- 上午：西湖十景游览（断桥残雪、苏堤春晓）
+- 下午：岳王庙、灵隐寺
+- 晚上：河坊街品尝杭州小吃
+
+第二天：历史文化深度游
+...
+```
+
+### 亲子旅游规划
+```
+用户: "帮我规划一个北京周末两日游，重点是亲子活动"
+
+助手: 为您推荐适合亲子的北京两日游行程：
+
+第一天：科技与自然
+- 上午：中国科技馆（互动展览）
+- 下午：北京动物园（熊猫馆）
+- 晚上：王府井步行街
+
+第二天：历史与文化
+...
+```
+
+## 🔄 开发流程
+
+### 添加新的 MCP 工具
+
+1. 在 `backend/src/tools/` 创建新的工具服务器
+2. 在 `TravelMcpTools` 类中添加工具配置
+3. 更新 Agent 的系统提示词
+4. 测试工具功能
+
+### 自定义 Agent 行为
+
+修改 `backend/src/core/travel_agent.py` 中的系统提示词和处理逻辑。
+
+### 前端组件开发
+
+在 `frontend/components/` 中添加新组件，使用 Tailwind CSS 进行样式设计。
+
+## 🐛 故障排除
+
+### 常见问题
+
+1. **MCP 工具连接失败**
+   - 检查 Python 路径和依赖安装
+   - 确认 API Keys 配置正确
+
+2. **WebSocket 连接断开**
+   - 检查网络连接
+   - 重启后端服务
+
+3. **API 调用限制**
+   - 检查 API Key 额度
+   - 考虑使用备用 API 服务
+
+## 📝 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📧 联系
+
+如有问题，请提交 GitHub Issue 或联系开发团队。
+
+---
+
+**注意**: 
+- 本项目使用百度地图 MCP Server，这是国内首家兼容 MCP 协议的地图服务商
+- 百度地图 API 需要在 [百度地图开放平台](https://lbsyun.baidu.com/) 申请 AK
+- 在生产环境中使用前，请确保进行充分的测试和安全评估
+
+## 🔗 相关链接
+
+- [百度地图 MCP Server](https://github.com/baidu-maps/mcp)
+- [百度地图开放平台](https://lbsyun.baidu.com/)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
